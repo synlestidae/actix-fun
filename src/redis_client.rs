@@ -39,6 +39,9 @@ impl actix::Handler<TxMessage<Status>> for RedisClient {
     type Result = ();
 
     fn handle(&mut self, msg: TxMessage<Status>, _ctx: &mut Self::Context) -> Self::Result {
+        let msg_id = msg.id.clone();
+        info!("{}: Writing status to redis", msg_id);
+
         let mut client = redis::Client::open(self.uri.clone()).unwrap(); // TODO
 
         let result = redis::Cmd::new()
@@ -48,6 +51,8 @@ impl actix::Handler<TxMessage<Status>> for RedisClient {
             .query(&mut client);
 
         let result_msg = msg.map(RedisResultMsg { result });
+
+        info!("{}: Completed redis operation", msg_id);
 
         self.result_recipient.do_send(result_msg).unwrap();
     }

@@ -16,7 +16,9 @@ impl actix::Handler<TxMessage<RedisResultMsg>> for ErrorLogger {
 
     fn handle(&mut self, msg: TxMessage<RedisResultMsg>, _ctx: &mut Self::Context) -> Self::Result {
         if let Err(err) = msg.msg.result {
-            error!("Redis error: {}", err);
+            error!("{}: Redis error: {}", msg.id, err);
+        } else {
+            info!("{}: Successfully wrote status to redis", msg.id);
         }
     }
 }
@@ -25,6 +27,6 @@ impl actix::Handler<TxMessage<ParseError>> for ErrorLogger {
     type Result = ();
 
     fn handle(&mut self, msg: TxMessage<ParseError>, _ctx: &mut Self::Context) -> Self::Result {
-        error!("Error parsing kafka payload: {:?}", msg.msg);
+        error!("{}: Error parsing kafka payload: {:?}", msg.id, msg.msg);
     }
 }

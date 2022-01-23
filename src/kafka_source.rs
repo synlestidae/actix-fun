@@ -3,6 +3,7 @@ use kafka::consumer::{Consumer, FetchOffset, GroupOffsetStorage};
 //use kafka::consumer::Message;
 use crate::TxMessage;
 use std::thread::JoinHandle;
+use log::info;
 
 pub struct KafkaSource {
     thread: JoinHandle<()>
@@ -30,6 +31,23 @@ pub struct Config {
     fallback_offset: FetchOffset,
 }
 
+impl Config {
+    pub fn new(
+        brokers: Vec<String>,
+        group: String,
+        topics: Vec<String>,
+    ) -> Self {
+        Self {
+            brokers,
+            group,
+            topics,
+            no_commit: false,
+            offset_storage: GroupOffsetStorage::Kafka,
+            fallback_offset: FetchOffset::Earliest
+        }
+    }
+}
+
 impl KafkaSource {
     pub fn new(cfg: &Config, recipients: Vec<actix::Recipient<TxMessage<KafkaMessage>>>) -> Self {
         let mut c = {
@@ -49,6 +67,7 @@ impl KafkaSource {
         };
 
         let thread = std::thread::spawn(move || {
+            info!("Started thread");
             loop {
                 for ms in c.poll().unwrap().iter() {
                     for r in recipients.iter() {
@@ -59,7 +78,9 @@ impl KafkaSource {
                                 key: m.key.iter().cloned().collect(),
                                 body: m.value.iter().cloned().collect()
                             };
-                            r.do_send(TxMessage::new(km)).unwrap();
+                            let txm = TxMessage::new(km);
+                            info!("{}: New message", txm.id);
+                            r.do_send(txm).unwrap();
                         }
                     }
                 }

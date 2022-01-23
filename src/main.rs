@@ -62,8 +62,14 @@ impl actix::Message for Status {
 
 #[actix_rt::main]
 async fn main() {
-    let cfg = todo!();
-    let redis_uri = String::new();
+    env_logger::init();
+
+    let cfg = kafka_source::Config::new(
+        vec!["localhost:9092".to_owned()],
+        "test_group".to_owned(),
+        vec!["status_test".to_owned()]
+    );
+    let redis_uri = format!("redis://localhost");
     let error_logger_addr = (error_logger::ErrorLogger {}).start();
     let redis_client = redis_client::RedisClient::new(&redis_uri, error_logger_addr.clone().recipient());
     let redis_client_addr = redis_client.start();
@@ -72,11 +78,13 @@ async fn main() {
         error_logger_addr.recipient()
     );
     let kafka_source = kafka_source::KafkaSource::new(
-        cfg,
+        &cfg,
         vec![kafka_parser.start().recipient()]
     );
 
-    debug!("Main thread started");
+    kafka_source.start();
+
+    info!("Main thread started");
 
     loop {
         async_std::task::sleep(std::time::Duration::new(60 * 60 * 24, 0)).await; // sleep for a day idk

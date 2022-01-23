@@ -41,6 +41,8 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
     type Result = ();
 
     fn handle(&mut self, msg: TxMessage<KafkaMessage>, _ctx: &mut Self::Context) -> Self::Result {
+        info!("{}: Parsing Kafka message", msg.id);
+
         // use serde to parse fields
         let status_bytes: Vec<u8> = msg.msg.body.clone();
         let status_string = match String::from_utf8(status_bytes) {
@@ -57,6 +59,9 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
                 return;
             }
         };
+
+        info!("{}: Successfully parsed message", msg.id);
+
         self.status_recipient.do_send(msg.map(status)).unwrap() // TODO
     }
 }
