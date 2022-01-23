@@ -8,7 +8,19 @@ use crate::TxMessage;
 
 pub struct KafkaParser {
     status_recipient: actix::Recipient<TxMessage<Status>>,
-    error_recipient: actix::Recipient<ParseError>
+    error_recipient: actix::Recipient<TxMessage<ParseError>>
+}
+
+impl KafkaParser {
+    pub fn new(
+        status_recipient: actix::Recipient<TxMessage<Status>>,
+        error_recipient: actix::Recipient<TxMessage<ParseError>>
+    ) -> Self {
+        Self {
+            status_recipient,
+            error_recipient
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -34,14 +46,14 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
         let status_string = match String::from_utf8(status_bytes) {
             Ok(s) => s,
             Err(err) => {
-                self.error_recipient.do_send(ParseError::Utf8Err(err)).unwrap(); // TODO
+                self.error_recipient.do_send(msg.map(ParseError::Utf8Err(err))).unwrap(); // TODO
                 return;
             }
         };
         let status = match serde_json::from_str(&status_string) {
             Ok(s) => s,
             Err(err) => {
-                self.error_recipient.do_send(ParseError::SerdeErr(err)).unwrap(); // TODO
+                self.error_recipient.do_send(msg.map(ParseError::SerdeErr(err))).unwrap(); // TODO
                 return;
             }
         };

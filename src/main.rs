@@ -1,4 +1,6 @@
 extern crate actix;
+extern crate actix_rt;
+extern crate async_std;
 #[macro_use]
 extern crate rocket;
 extern crate serde;
@@ -6,6 +8,8 @@ extern crate uuid;
 extern crate kafka;
 extern crate chrono;
 extern crate redis;
+extern crate log;
+extern crate env_logger;
 
 use actix::*;
 use rocket::response::content::Json;
@@ -14,9 +18,9 @@ use chrono::offset::Utc;
 use serde::{Deserialize, Serialize};
 
 mod kafka_source;
-mod multiplexer;
 mod redis_client;
 mod kafka_parser;
+mod error_logger;
 
 pub struct TxMessage<T> {
     pub msg: T,
@@ -43,7 +47,7 @@ impl<T> TxMessage<T> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Status {
     pub name: String,
     pub timestamp: DateTime<Utc>,
@@ -56,5 +60,25 @@ impl actix::Message for Status {
     type Result = ();
 }
 
-fn main() {
+#[actix_rt::main]
+async fn main() {
+    let cfg = todo!();
+    let redis_uri = String::new();
+    let error_logger_addr = (error_logger::ErrorLogger {}).start();
+    let redis_client = redis_client::RedisClient::new(&redis_uri, error_logger_addr.clone().recipient());
+    let redis_client_addr = redis_client.start();
+    let kafka_parser = kafka_parser::KafkaParser::new(
+        redis_client_addr.recipient(),
+        error_logger_addr.recipient()
+    );
+    let kafka_source = kafka_source::KafkaSource::new(
+        cfg,
+        vec![kafka_parser.start().recipient()]
+    );
+
+    debug!("Main thread started");
+
+    loop {
+        async_std::task::sleep(std::time::Duration::new(60 * 60 * 24, 0)).await; // sleep for a day idk
+    }
 }

@@ -21,7 +21,7 @@ impl actix::Message for KafkaMessage {
 
 // Thanks to https://github.com/kafka-rust/kafka-rust/blob/master/examples/console-consumer.rs
 
-struct Config {
+pub struct Config {
     brokers: Vec<String>,
     group: String,
     topics: Vec<String>,
@@ -31,7 +31,7 @@ struct Config {
 }
 
 impl KafkaSource {
-    fn new(cfg: &Config, recipients: Vec<actix::Recipient<TxMessage<KafkaMessage>>>) -> Self {
+    pub fn new(cfg: &Config, recipients: Vec<actix::Recipient<TxMessage<KafkaMessage>>>) -> Self {
         let mut c = {
             let mut cb = Consumer::from_hosts(cfg.brokers.clone())
                 .with_group(cfg.group.clone())
