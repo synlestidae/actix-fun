@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 
 mod kafka_source;
 mod multiplexer;
-mod redis_formatter;
 mod redis_client;
 mod kafka_parser;
 
