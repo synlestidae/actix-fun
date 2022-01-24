@@ -20,11 +20,22 @@ use serde::{Deserialize, Serialize};
 mod kafka_source;
 mod redis_client;
 mod kafka_parser;
+mod alert_analyser;
+mod alert_emailer;
 mod error_logger;
 
 pub struct TxMessage<T> {
     pub msg: T,
     pub id: String
+}
+
+impl<T: Clone> Clone for TxMessage<T> {
+    fn clone(&self) -> Self {
+        Self {
+            msg: self.msg.clone(),
+            id: self.id.to_owned()
+        }
+    }
 }
 
 impl<T: actix::Message> actix::Message for TxMessage<T> {
