@@ -1,0 +1,6 @@
+{
+  "brokers": ["localhost:9092"],
+  "group": "test-status-consumer-group",
+  "topic": "test-status-topic",
+  "redis_uri": "redis://localhost"
+}

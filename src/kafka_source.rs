@@ -28,7 +28,6 @@ pub struct Config {
     topics: Vec<String>,
     offset_storage: GroupOffsetStorage,
     fallback_offset: FetchOffset,
-    redis_uri: String,
 }
 
 impl Config {
@@ -37,7 +36,6 @@ impl Config {
             brokers,
             group,
             topics,
-            no_commit: false,
             offset_storage: GroupOffsetStorage::Kafka,
             fallback_offset: FetchOffset::Earliest,
         }
