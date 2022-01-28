@@ -10,6 +10,9 @@ extern crate chrono;
 extern crate redis;
 extern crate log;
 extern crate env_logger;
+extern crate lettre;
+extern crate lettre_email;
+extern crate native_tls;
 
 use actix::*;
 use rocket::response::content::Json;
