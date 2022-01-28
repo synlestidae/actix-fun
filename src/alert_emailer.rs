@@ -24,72 +24,50 @@ impl actix::Handler<TxMessage<StateChange>> for AlertEmailer {
     type Result = ();
 
     fn handle(&mut self, msg: TxMessage<StateChange>, _ctx: &mut Self::Context) -> Self::Result {
-        let message_id = format!(
-            "alert-email-test:{}",
-            msg.id
-        );
+        let subject = "test_email";
+        let message = "fun_email";
+        let email_body = vec![
+          "Content-Type: text/plain\r\n",
+          "MIME-Version: 1.0\r\n",
+          &format!("From: {}\r\n", self.from),
+          &format!("To: {}\r\n", self.to),
+          &format!("Subject: {}\r\n\r\n", subject),
+          &format!("{}\r\n\r\n", message),
+        ];
+        /*
+         *
+        *  'Content-Type: multipart/mixed; boundary="foo_bar_baz"\r\n',
+  'MIME-Version: 1.0\r\n',
+  'From: sender@gmail.com\r\n',
+  'To: receiver@gmail.com\r\n',
+  'Subject: Subject Text\r\n\r\n',
 
-        debug!("Email parameter (message_id={})", message_id);
-        debug!("Email parameter (from={})", self.from);
+  '--foo_bar_baz\r\n',
+  'Content-Type: text/plain; charset="UTF-8"\r\n',
+  'MIME-Version: 1.0\r\n',
+  'Content-Transfer-Encoding: 7bit\r\n\r\n',
 
-        let mut email_body = String::new();
-        email_body.push_str(&format!("There was a status change. You might want to look into this!
-            
-            Here is the current status: 
-            {}
+  'The actual message text goes here\r\n\r\n',
 
-            This was the previous status:
-            {}
-        ", msg.msg.previous_status, msg.msg.current_status));
+  '--foo_bar_baz\r\n',
+  'Content-Type: image/png\r\n',
+  'MIME-Version: 1.0\r\n',
+  'Content-Transfer-Encoding: base64\r\n',
+  'Content-Disposition: attachment; filename="example.png"\r\n\r\n',
 
-        let mut email_builder = EmailBuilder::new()
-            .from(self.from)
-            .subject("Something changed!")
-            .body(email_body);
+   pngData, '\r\n\r\n',
 
-        email_builder = email_builder.to(self.to); // TODO This may fail if formatted badly
-
-        let connector = match TlsConnector::new() {
-            Ok(c) => c,
-            Err(err) => {
-                error!("Error with TLS connector: {}", err);
-                return;
-            }
-        };
-        let client = SmtpClient::new(
-            self.hostname,
-            ClientSecurity::Required(ClientTlsParameters {
-                connector,
-                domain: self.host.clone(),
-            }),
-        );
-
-        debug!("Using credentials (username={})", self.username);
-
-        let creds = Credentials::new(self.username, self.password);
-
-        let mut transport = client
-            .credentials(creds)
-            .hello_name(ClientId::Domain(host))
-            .transport();
-
-        debug!("Sending email");
-
-        let email = match email_builder.build() {
-            Ok(e) => e,
-            Err(err) => {
-                error!("Error building email: {}", err);
-                return Err(Error::from(err));
-            }
-        };
-
-        match transport.send(email.into()) {
-            Ok(_) => info!("Email sent successfully!"),
-            Err(e) => {
-                error!("Failed to send email: {:?}", e);
-                return Err(Error::from(e));
-            }
-        };
+   '--foo_bar_baz--' 
+         var response = UrlFetchApp.fetch(
+        "https://www.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media", {
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer " + ScriptApp.getOAuthToken(),
+                "Content-Type": "message/rfc822",
+            },
+            muteHttpExceptions: true,
+            payload: mail
+         * */
 
         Ok(())
     }
