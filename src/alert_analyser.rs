@@ -1,6 +1,7 @@
 use crate::Status;
 use crate::TxMessage;
 use actix;
+use log::info;
 use serde::Serialize;
 use std::collections::HashMap;
 
@@ -36,6 +37,7 @@ impl actix::Handler<TxMessage<Status>> for AlertAnalyser {
     type Result = ();
 
     fn handle(&mut self, msg: TxMessage<Status>, _ctx: &mut Self::Context) -> Self::Result {
+        info!("{}: Handling a new status message", msg.id);
         // compute what kind of change
 
         let change = match self.statuses.get(&msg.msg.name) {
@@ -55,24 +57,35 @@ impl actix::Handler<TxMessage<Status>> for AlertAnalyser {
             .insert(msg.msg.name.to_owned(), msg.msg.clone());
 
         let current_status = msg.msg.clone();
+        let id = msg.id.clone();
+        let name = msg.msg.name.clone();
 
         let status_change_msg = msg.map(match change {
-            InternalState::New => StateChange {
-                previous_status: None,
-                current_status,
-            },
-            InternalState::Changed { previous } => StateChange {
-                previous_status: Some(previous.clone()),
-                current_status,
-            },
-            InternalState::Unchanged => return,
+            InternalState::New => {
+                info!("{}: First status message for `{}`", id, name);
+                StateChange {
+                    previous_status: None,
+                    current_status,
+                }
+            }
+            InternalState::Changed { previous } => {
+                info!("{}: Status has changed for `{}`", id, name);
+                StateChange {
+                    previous_status: Some(previous.clone()),
+                    current_status,
+                }
+            }
+            InternalState::Unchanged => {
+                info!("{}: No status change for `{}`", id, name);
+                return;
+            }
         });
 
         for recipient in self.state_change_recipients.iter() {
             if let Err(err) = recipient.do_send(status_change_msg.clone()) {
                 error!(
-                    "There was an error sending status change message to {:?}: {}",
-                    recipient, err
+                    "{}: There was an error sending status change message to {:?}: {}",
+                    id, recipient, err,
                 );
             }
         }

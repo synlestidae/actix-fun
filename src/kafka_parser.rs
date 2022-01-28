@@ -48,6 +48,7 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
         let status_string = match String::from_utf8(status_bytes) {
             Ok(s) => s,
             Err(err) => {
+                error!("{}: Error parsing UTF8 string: {}", msg.id, err);
                 self.error_recipient
                     .do_send(msg.map(ParseError::Utf8Err(err)))
                     .unwrap(); // TODO
@@ -57,6 +58,8 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
         let status = match serde_json::from_str(&status_string) {
             Ok(s) => s,
             Err(err) => {
+                error!("{}: Error parsing status string: {}", msg.id, err);
+
                 self.error_recipient
                     .do_send(msg.map(ParseError::SerdeErr(err)))
                     .unwrap(); // TODO

@@ -1,7 +1,7 @@
 use crate::alert_analyser::StateChange;
 use crate::TxMessage;
 use actix_rt;
-use log::error;
+use log::{error, info};
 
 pub struct WebhookCaller {
     pub url: String,
@@ -16,7 +16,15 @@ impl actix::Handler<TxMessage<StateChange>> for WebhookCaller {
 
     fn handle(&mut self, msg: TxMessage<StateChange>, _ctx: &mut Self::Context) -> Self::Result {
         let url = self.url.clone();
+
+        info!(
+            "{}: Received state change. Spawning an upload task.",
+            msg.id
+        );
+
         actix_rt::task::spawn_blocking(move || {
+            info!("{}: Uploading to {}", msg.id, url);
+
             let client = reqwest::blocking::Client::new();
             let res = client
                 .post(&url)
@@ -24,7 +32,7 @@ impl actix::Handler<TxMessage<StateChange>> for WebhookCaller {
                 .send();
 
             if let Err(err) = res {
-                error!("Error posting to webhook: {}", err);
+                error!("{}: Error posting to webhook: {}", msg.id, err);
             }
         });
     }
