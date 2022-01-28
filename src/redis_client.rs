@@ -1,26 +1,25 @@
-use actix;
 use crate::Status;
 use crate::TxMessage;
+use actix;
 use redis;
 use serde_json;
 
 pub struct RedisClient {
     uri: String,
-    result_recipient: actix::Recipient<TxMessage<RedisResultMsg>>
+    result_recipient: actix::Recipient<TxMessage<RedisResultMsg>>,
 }
 
 impl RedisClient {
     pub fn new(uri: &str, result_recipient: actix::Recipient<TxMessage<RedisResultMsg>>) -> Self {
         Self {
             uri: uri.to_owned(),
-            result_recipient
+            result_recipient,
         }
     }
 }
 
-
 pub struct RedisResultMsg {
-    pub result: redis::RedisResult<()>
+    pub result: redis::RedisResult<()>,
 }
 
 impl actix::Message for RedisResultMsg {
@@ -28,7 +27,7 @@ impl actix::Message for RedisResultMsg {
 }
 
 impl actix::Message for RedisClient {
-    type Result=();
+    type Result = ();
 }
 
 impl actix::Actor for RedisClient {

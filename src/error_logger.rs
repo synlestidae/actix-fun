@@ -1,11 +1,10 @@
-use actix;
-use crate::redis_client::RedisResultMsg;
-use log::error;
-use crate::TxMessage;
 use crate::kafka_parser::ParseError;
+use crate::redis_client::RedisResultMsg;
+use crate::TxMessage;
+use actix;
+use log::error;
 
-pub struct ErrorLogger {
-}
+pub struct ErrorLogger {}
 
 impl actix::Actor for ErrorLogger {
     type Context = actix::Context<Self>;

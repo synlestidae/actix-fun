@@ -1,7 +1,7 @@
-use crate::TxMessage;
 use crate::alert_analyser::StateChange;
-use log::error;
+use crate::TxMessage;
 use actix_rt;
+use log::error;
 
 pub struct WebhookCaller {
     pub url: String,
@@ -18,7 +18,8 @@ impl actix::Handler<TxMessage<StateChange>> for WebhookCaller {
         let url = self.url.clone();
         actix_rt::task::spawn_blocking(move || {
             let client = reqwest::blocking::Client::new();
-            let res = client.post(&url)
+            let res = client
+                .post(&url)
                 .body(serde_json::to_string(&msg.msg).unwrap())
                 .send();
 
@@ -28,4 +29,3 @@ impl actix::Handler<TxMessage<StateChange>> for WebhookCaller {
         });
     }
 }
-

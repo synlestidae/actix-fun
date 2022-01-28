@@ -1,24 +1,24 @@
-use actix;
 use crate::kafka_source::KafkaMessage;
+use crate::Status;
+use crate::TxMessage;
+use actix;
 use serde_json;
 use serde_json::error::Error as SerdeErr;
-use crate::Status;
 use std::string::FromUtf8Error;
-use crate::TxMessage;
 
 pub struct KafkaParser {
     status_recipients: Vec<actix::Recipient<TxMessage<Status>>>,
-    error_recipient: actix::Recipient<TxMessage<ParseError>>
+    error_recipient: actix::Recipient<TxMessage<ParseError>>,
 }
 
 impl KafkaParser {
     pub fn new(
         status_recipients: Vec<actix::Recipient<TxMessage<Status>>>,
-        error_recipient: actix::Recipient<TxMessage<ParseError>>
+        error_recipient: actix::Recipient<TxMessage<ParseError>>,
     ) -> Self {
         Self {
             status_recipients,
-            error_recipient
+            error_recipient,
         }
     }
 }
@@ -48,20 +48,24 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
         let status_string = match String::from_utf8(status_bytes) {
             Ok(s) => s,
             Err(err) => {
-                self.error_recipient.do_send(msg.map(ParseError::Utf8Err(err))).unwrap(); // TODO
+                self.error_recipient
+                    .do_send(msg.map(ParseError::Utf8Err(err)))
+                    .unwrap(); // TODO
                 return;
             }
         };
         let status = match serde_json::from_str(&status_string) {
             Ok(s) => s,
             Err(err) => {
-                self.error_recipient.do_send(msg.map(ParseError::SerdeErr(err))).unwrap(); // TODO
+                self.error_recipient
+                    .do_send(msg.map(ParseError::SerdeErr(err)))
+                    .unwrap(); // TODO
                 return;
             }
         };
 
         info!("{}: Successfully parsed message", msg.id);
-        
+
         let next_msg = msg.map(status);
 
         for recipient in self.status_recipients.iter() {
