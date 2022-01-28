@@ -13,6 +13,7 @@ extern crate env_logger;
 extern crate lettre;
 extern crate lettre_email;
 extern crate native_tls;
+extern crate reqwest;
 
 use actix::*;
 use rocket::response::content::Json;
@@ -24,7 +25,7 @@ mod kafka_source;
 mod redis_client;
 mod kafka_parser;
 mod alert_analyser;
-mod alert_emailer;
+mod webhook_caller;
 mod error_logger;
 
 pub struct TxMessage<T> {
@@ -85,10 +86,25 @@ async fn main() {
     );
     let redis_uri = format!("redis://localhost");
     let error_logger_addr = (error_logger::ErrorLogger {}).start();
+
     let redis_client = redis_client::RedisClient::new(&redis_uri, error_logger_addr.clone().recipient());
     let redis_client_addr = redis_client.start();
+
+    let webhook_caller = webhook_caller::WebhookCaller { 
+        url: String::from("https://webhook.site/059609d2-ddf3-4290-87b9-e125a1317869")
+    };
+    let webhook_caller_addr = webhook_caller.start();
+
+    let alert_analyser = alert_analyser::AlertAnalyser::new(
+        vec![webhook_caller_addr.recipient()]
+    );
+    let alert_analyser_addr = alert_analyser.start();
+
     let kafka_parser = kafka_parser::KafkaParser::new(
-        redis_client_addr.recipient(),
+        vec![
+            redis_client_addr.recipient(),
+            alert_analyser_addr.recipient()
+        ],
         error_logger_addr.recipient()
     );
     let kafka_source = kafka_source::KafkaSource::new(

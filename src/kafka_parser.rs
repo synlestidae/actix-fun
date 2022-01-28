@@ -7,17 +7,17 @@ use std::string::FromUtf8Error;
 use crate::TxMessage;
 
 pub struct KafkaParser {
-    status_recipient: actix::Recipient<TxMessage<Status>>,
+    status_recipients: Vec<actix::Recipient<TxMessage<Status>>>,
     error_recipient: actix::Recipient<TxMessage<ParseError>>
 }
 
 impl KafkaParser {
     pub fn new(
-        status_recipient: actix::Recipient<TxMessage<Status>>,
+        status_recipients: Vec<actix::Recipient<TxMessage<Status>>>,
         error_recipient: actix::Recipient<TxMessage<ParseError>>
     ) -> Self {
         Self {
-            status_recipient,
+            status_recipients,
             error_recipient
         }
     }
@@ -61,7 +61,11 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
         };
 
         info!("{}: Successfully parsed message", msg.id);
+        
+        let next_msg = msg.map(status);
 
-        self.status_recipient.do_send(msg.map(status)).unwrap() // TODO
+        for recipient in self.status_recipients.iter() {
+            recipient.do_send(next_msg.clone()).unwrap() // TODO
+        }
     }
 }

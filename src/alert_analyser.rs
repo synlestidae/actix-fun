@@ -2,6 +2,7 @@ use actix;
 use crate::TxMessage;
 use crate::Status;
 use std::collections::HashMap;
+use serde::Serialize;
 
 pub struct AlertAnalyser {
     state_change_recipients: Vec<actix::Recipient<TxMessage<StateChange>>>,
@@ -19,7 +20,7 @@ impl AlertAnalyser {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct StateChange {
     pub previous_status: Option<Status>,
     pub current_status: Status
@@ -41,7 +42,7 @@ impl actix::Handler<TxMessage<Status>> for AlertAnalyser {
         
         let change = match self.statuses.get(&msg.msg.name) {
             None => InternalState::New,
-            Some(status) => if status.status == msg.msg.status {
+            Some(status) => if status.status != msg.msg.status {
                 InternalState::Changed { previous: status.clone() }
             } else {
                 InternalState::Unchanged
