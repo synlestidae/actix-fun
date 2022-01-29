@@ -6,7 +6,7 @@ use log::info;
 use std::thread::JoinHandle;
 
 pub struct KafkaSource {
-    thread: JoinHandle<()>,
+    _thread: JoinHandle<()>,
 }
 
 pub struct KafkaMessage {
@@ -53,7 +53,8 @@ impl KafkaSource {
                 .with_fetch_max_bytes_per_partition(100_000)
                 .with_retry_max_bytes_limit(1_000_000)
                 .with_offset_storage(cfg.offset_storage)
-                .with_client_id("actor-transactor-console-consumer".into());
+                .with_client_id("actix-fun-console-consumer".into());
+
             for topic in &cfg.topics {
                 cb = cb.with_topic(topic.to_owned());
             }
@@ -81,7 +82,7 @@ impl KafkaSource {
             }
         });
 
-        Self { thread }
+        Self { _thread: thread }
     }
 }
 

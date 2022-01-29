@@ -63,6 +63,7 @@ impl actix::Handler<TxMessage<KafkaMessage>> for KafkaParser {
                 self.error_recipient
                     .do_send(msg.map(ParseError::SerdeErr(err)))
                     .unwrap(); // TODO
+
                 return;
             }
         };

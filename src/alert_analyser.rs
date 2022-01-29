@@ -5,6 +5,8 @@ use log::info;
 use serde::Serialize;
 use std::collections::HashMap;
 
+/// Consumes Status messages and produces StateChange messages 
+/// if the status field is different from the previous message.
 pub struct AlertAnalyser {
     state_change_recipients: Vec<actix::Recipient<TxMessage<StateChange>>>,
     statuses: HashMap<String, Status>,
@@ -20,6 +22,8 @@ impl AlertAnalyser {
 }
 
 #[derive(Clone, Serialize)]
+/// Represents a status change. The first status seen by the system
+/// is also considered a status change.
 pub struct StateChange {
     pub previous_status: Option<Status>,
     pub current_status: Status,
@@ -59,6 +63,10 @@ impl actix::Handler<TxMessage<Status>> for AlertAnalyser {
         let current_status = msg.msg.clone();
         let id = msg.id.clone();
         let name = msg.msg.name.clone();
+
+        // the next block either exits this method 
+        // or builds the status_change msg for the next
+        // actors
 
         let status_change_msg = msg.map(match change {
             InternalState::New => {
