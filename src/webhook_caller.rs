@@ -22,6 +22,11 @@ impl actix::Handler<TxMessage<StateChange>> for WebhookCaller {
             msg.id
         );
 
+        // we do not want to block the handle() method and
+        // we aren't using async-await right now.
+        // luckily actix_rt has spawn_blocking. an improvement would be to 
+        // spawn a future, or change this to an async handler
+
         actix_rt::task::spawn_blocking(move || {
             info!("{}: Uploading to {}", msg.id, url);
 
@@ -33,6 +38,8 @@ impl actix::Handler<TxMessage<StateChange>> for WebhookCaller {
 
             if let Err(err) = res {
                 error!("{}: Error posting to webhook: {}", msg.id, err);
+            } else {
+                info!("{}: Posting to the webhook was a success", msg.id);
             }
         });
     }
